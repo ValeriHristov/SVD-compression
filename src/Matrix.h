@@ -19,6 +19,10 @@ public:
 
     void print(std::ostream& _os = std::cout);
 
+    // export format for WolframMathematica
+    // import by using ReadList[ PATH/file, Number, RecordLists -> True]
+    void exportForWolframMathematica(std::ostream& _os = std::cout);
+
 private:
     void copy(const Matrix& _other);
     void move(Matrix&& _other);

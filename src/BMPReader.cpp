@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <cmath>
 #include "BMPReader.h"
+#include "Utils.h"
 
 ImageData BMPReader::ReadFile(const char * _fileName) const
 {
@@ -19,8 +20,9 @@ ImageData BMPReader::ReadFile(const char * _fileName) const
 
 
     // TODO support different pixel formats
-    u8 pixelSizeInBits = 24U;
-    u32 paddedRowLen = (u32(std::ceil((width * pixelSizeInBits) / 8.0)) + 3) & (~3);
+    u8 pixelSizeInBits = 24;
+
+    u32 paddedRowLen = alignTo4(width * 3);
 
 
     u32 dataSize = paddedRowLen * height;

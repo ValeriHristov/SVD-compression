@@ -13,15 +13,19 @@ std::vector<Matrix> imageToMatrices(const ImageData & _image)
 
     u8* data = static_cast<u8*>(_image.m_pixels.m_data);
 
+
+    u32 index = 0;
+
     for (u32 i = 0u; i < _image.m_height; i++)
     {
         for (u32 j = 0u; j < _image.m_width; j++)
         {
             for (u32 m = 0u; m < matrixCount; m++)
-            {
-                matrices[m][i][j] = static_cast<MatrixValue>(data[i * _image.m_width + j + m]);
+            {             
+                matrices[m][i][j] = static_cast<MatrixValue>(data[index++]);
             }
         }
+        index = alignTo4(index);
     }
 
 

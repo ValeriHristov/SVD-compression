@@ -26,7 +26,7 @@ Matrix & Matrix::operator=(const Matrix & _other)
     return *this;
 }
 
-Matrix & Matrix::operator=(Matrix && _other) 
+Matrix & Matrix::operator=(Matrix && _other)
 {
     move(std::move(_other));
     return *this;
@@ -48,6 +48,21 @@ void Matrix::print(std::ostream & _os)
         _os << '\n';
     }
 }
+
+void Matrix::exportForWolframMathematica(std::ostream & _os)
+{
+    // by default .bmp keeps the rows in down-up order, so reverse them
+    // TODO support the other case
+    for (u32 i = 0; i < m_rows; i++)
+    {
+        for (u32 j = 0; j < m_cols - 1; j++)
+        {
+            _os << ((*this)[m_rows - i - 1][j]) / 255. << ' ';
+        }
+        _os << ((*this)[0][m_cols - 1]) / 255. << '\n';
+    }
+}
+
 
 void Matrix::copy(const Matrix & _other)
 {
