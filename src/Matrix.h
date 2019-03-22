@@ -15,7 +15,11 @@ public:
     Matrix& operator=(Matrix&& _other);
     ~Matrix();
 
+    u16 getRows() const { return m_rows; }
+    u16 getCols() const { return m_cols; }
+
     inline MatrixValue* operator[](u16 _row) { return m_values + m_cols * _row; };
+    inline const MatrixValue* operator[](u16 _row) const { return m_values + m_cols * _row; };
 
     void print(std::ostream& _os = std::cout);
 
@@ -33,3 +37,8 @@ private:
 };
 
 Matrix operator*(const Matrix& _left, const Matrix& _right);
+
+Matrix mul(const Matrix& _left, const Matrix& _right);
+
+// multiplies a*bT
+Matrix mulTransposed(const Matrix& _left, const Matrix& _right);

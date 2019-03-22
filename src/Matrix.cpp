@@ -21,6 +21,7 @@ Matrix & Matrix::operator=(const Matrix & _other)
 {
     if (this != &_other)
     {
+        delete[] m_values;
         copy(_other);
     }
     return *this;
@@ -28,7 +29,11 @@ Matrix & Matrix::operator=(const Matrix & _other)
 
 Matrix & Matrix::operator=(Matrix && _other)
 {
-    move(std::move(_other));
+    if (this != &_other)
+    {
+        delete[] m_values;
+        move(std::move(_other));
+    }
     return *this;
 }
 
@@ -82,4 +87,76 @@ void Matrix::move(Matrix && _other)
     m_cols = _other.m_cols;
     m_values = _other.m_values;
     _other.m_values = nullptr;
+}
+
+Matrix operator*(const Matrix & _left, const Matrix & _right)
+{
+    return mul(_left, _right);
+}
+
+Matrix mul(const Matrix & _left, const Matrix & _right)
+{
+    u16 m = _left.getRows();
+    u16 n = _left.getCols();
+    u16 p = _right.getCols();
+
+    if (_left.getCols() != _right.getRows())
+    {
+        std::cerr << "Invalid multiplication!\n";
+        return Matrix();
+    }
+
+    Matrix product(m, p);
+
+    i32 sum;
+
+    for (u16 i = 0; i < m; i++)
+    {
+        for (u16 j = 0; j < p; j++)
+        {
+            sum = 0;
+            for (u16 k = 0; k < n; k++)
+            {
+                i32 l = _left[i][k];
+                i32 r = _right[k][j];
+                sum += (l * r);
+            }
+            product[i][j] = sum;
+        }
+    }
+
+    return std::move(product);
+}
+
+Matrix mulTransposed(const Matrix & _left, const Matrix & _right)
+{
+    u16 m = _left.getRows();
+    u16 n = _left.getCols();
+    u16 p = _right.getRows();
+    if (_left.getCols() != _right.getCols())
+    {
+        std::cerr << "Invalid multiplication!\n";
+        return Matrix();
+    }
+
+    Matrix product(m, p);
+
+    i32 sum;
+
+    for (u16 i = 0; i < m; i++)
+    {
+        for (u16 j = 0; j < p; j++)
+        {
+            sum = 0;
+            for (u16 k = 0; k < n; k++)
+            {
+                i32 l = _left[i][k];
+                i32 r = _right[j][k];
+                sum += (l * r);
+            }
+            product[i][j] = sum;
+        }
+    }
+
+    return std::move(product);
 }
