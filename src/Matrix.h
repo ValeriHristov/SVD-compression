@@ -2,7 +2,7 @@
 #include <iostream>
 #include "Types.h"
 
-typedef u8 MatrixValue;
+typedef float MatrixValue;
 
 class Matrix
 {
@@ -20,6 +20,24 @@ public:
 
     inline MatrixValue* operator[](u16 _row) { return m_values + m_cols * _row; };
     inline const MatrixValue* operator[](u16 _row) const { return m_values + m_cols * _row; };
+
+    bool operator==(const Matrix& _other)
+    {
+        if (m_rows != _other.m_rows || m_cols != _other.m_cols)
+            return false;
+
+        for (int i = 0; i < m_rows; i++)
+        {
+            for (int j = 0; j < m_cols; j++)
+            {
+                if ((*this)[i][j] != _other[i][j])
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    Matrix transpose() const;
 
     void print(std::ostream& _os = std::cout);
 
@@ -42,3 +60,6 @@ Matrix mul(const Matrix& _left, const Matrix& _right);
 
 // multiplies a*bT
 Matrix mulTransposed(const Matrix& _left, const Matrix& _right);
+
+// multiplies a*bT
+Matrix mulTransposedSIMD(const Matrix & _left, const Matrix & _right);
