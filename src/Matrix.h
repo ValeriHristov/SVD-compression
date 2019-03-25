@@ -56,10 +56,15 @@ private:
 
 Matrix operator*(const Matrix& _left, const Matrix& _right);
 
-Matrix mul(const Matrix& _left, const Matrix& _right);
+Matrix mulSlow(const Matrix& _left, const Matrix& _right);
+
+// fastest multiplication using multithreading
+Matrix mul(const Matrix & _left, const Matrix & _right, u32 _threadCount = 4);
 
 // multiplies a*bT
 Matrix mulTransposed(const Matrix& _left, const Matrix& _right);
 
 // multiplies a*bT
 Matrix mulTransposedSIMD(const Matrix & _left, const Matrix & _right);
+
+Matrix mulThreaded(const Matrix & _left, const Matrix & _right, u32 _numThreads);
