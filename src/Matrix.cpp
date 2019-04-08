@@ -10,9 +10,19 @@ u32 alignTo(u32 _num, u32 _alignment)
     return _num + (_alignment - _num % _alignment);
 }
 
+void Matrix::clear()
+{
+    delete[] m_values;
+}
+
+void  Matrix::alloc(u32 _count, u32 _alignment)
+{
+    m_values = new MatrixValue[_count];
+}
+
 Matrix::Matrix(u16 _rows, u16 _cols) : m_rows(_rows), m_cols(_cols)
 {
-    m_values = new MatrixValue[_rows*_cols];
+    alloc(_rows*_cols, 64);
 }
 
 Matrix::Matrix(const Matrix & _other)
@@ -29,7 +39,7 @@ Matrix & Matrix::operator=(const Matrix & _other)
 {
     if (this != &_other)
     {
-        delete[] m_values;
+        clear();
         copy(_other);
     }
     return *this;
@@ -39,7 +49,7 @@ Matrix & Matrix::operator=(Matrix && _other)
 {
     if (this != &_other)
     {
-        delete[] m_values;
+        clear();
         move(std::move(_other));
     }
     return *this;
@@ -47,7 +57,7 @@ Matrix & Matrix::operator=(Matrix && _other)
 
 Matrix::~Matrix()
 {
-    delete[] m_values;
+    clear();
 }
 
 Matrix Matrix::transpose() const
@@ -70,7 +80,7 @@ void Matrix::print(std::ostream & _os)
     {
         for (u32 j = 0; j < m_cols; j++)
         {
-            _os << (u32)(*this)[i][j] << ' ';
+            _os << (*this)[i][j] << ' ';
         }
         _os << '\n';
     }
@@ -90,13 +100,12 @@ void Matrix::exportForWolframMathematica(std::ostream & _os)
     }
 }
 
-
 void Matrix::copy(const Matrix & _other)
 {
     m_rows = _other.m_rows;
     m_cols = _other.m_cols;
     u32 size = m_rows * m_cols;
-    m_values = new MatrixValue[size];
+    alloc(size, 64);
     for (u32 i = 0u; i < size; i++)
     {
         m_values[i] = _other.m_values[i];
@@ -109,6 +118,36 @@ void Matrix::move(Matrix && _other)
     m_cols = _other.m_cols;
     m_values = _other.m_values;
     _other.m_values = nullptr;
+}
+
+float dotProduct(const float * _left,const float * _right, u32 _size)
+{
+    __m128 sum;
+    float tsum = 0;
+
+    tsum = 0.f;
+    sum = _mm_setzero_ps();
+
+    for (u16 k = 0; k < _size - 3; k += 4)
+    {
+        __m128 l = _mm_loadu_ps(_left + k);
+        __m128 r = _mm_loadu_ps(_right + k);
+        sum = _mm_add_ps(_mm_mul_ps(l, r), sum);
+    }
+
+    alignas(16) float s[4];
+
+    _mm_store_ps(s, sum);
+    tsum = s[0] + s[1] + s[2] + s[3];
+
+    for (int k = _size & ~3; k < _size; k++)
+    {
+        float l = _left[k];
+        float r = _right[k];
+        tsum += (l*r);
+    }
+
+    return tsum;
 }
 
 Matrix operator*(const Matrix & _left, const Matrix & _right)
@@ -152,6 +191,13 @@ Matrix mul(const Matrix & _left, const Matrix & _right, u32 _threadCount)
 {
     Matrix transposed = _right.transpose();
 
+    u32 matrixRows = transposed.getRows();
+
+    if (_threadCount > matrixRows)
+    {
+        _threadCount = matrixRows;
+    }
+
     return mulThreaded(_left, transposed, _threadCount);
 }
 
@@ -187,40 +233,13 @@ Matrix mulTransposed(const Matrix & _left, const Matrix & _right)
 
 void mulRowsChunk(u32 _startRow, u32 _rowsToProcess, const Matrix& _left, const Matrix& _right, Matrix& _result)
 {
-    __m128 sum;
-    float tsum = 0;
-
     u16 n = _left.getCols();
     u16 p = _right.getRows();
     for (u16 i = _startRow; i < _startRow + _rowsToProcess; i++)
     {
         for (u16 j = 0; j < p; j++)
         {
-            tsum = 0.f;
-            sum = _mm_setzero_ps();
-
-            const float* lp = _left[i];
-            const float* rp = _right[j];
-
-            for (u16 k = 0; k < n - 3; k += 4)
-            {
-                __m128 l = _mm_loadu_ps(lp + k);
-                __m128 r = _mm_loadu_ps(rp + k);
-                sum = _mm_add_ps(_mm_mul_ps(l, r), sum);
-            }
-
-            alignas(16) float s[4];
-
-            _mm_store_ps(s, sum);
-            tsum = s[0] + s[1] + s[2] + s[3];
-
-            for (int k = n & ~3; k < n; k++)
-            {
-                float l = _left[i][k];
-                float r = _right[j][k];
-                tsum += (l*r);
-            }
-            _result[i][j] = tsum;
+            _result[i][j] = dotProduct(_left[i], _right[j], n);
         }
     }
 }
@@ -257,48 +276,9 @@ Matrix mulThreaded(const Matrix & _left, const Matrix & _right, u32 _numThreads)
 Matrix mulTransposedSIMD(const Matrix & _left, const Matrix & _right)
 {
     u16 m = _left.getRows();
-    u16 n = _left.getCols();
     u16 p = _right.getRows();
-    if (_left.getCols() != _right.getCols())
-    {
-        std::cerr << "Invalid multiplication!\n";
-        return Matrix();
-    }
-
     Matrix product(m, p);
-    __m128 sum;
-    float tsum = 0;
-
-    for (u16 i = 0; i < m; i++)
-    {
-        for (u16 j = 0; j < p; j++)
-        {
-            tsum = 0.f;
-            sum = _mm_setzero_ps();
-
-            const float* lp = _left[i];
-            const float* rp = _right[j];
-
-            for (u16 k = 0; k < n - 3; k += 4)
-            {
-                __m128 l = _mm_loadu_ps(lp + k);
-                __m128 r = _mm_loadu_ps(rp + k);
-                sum = _mm_add_ps(_mm_mul_ps(l, r), sum);
-            }
-
-            alignas(16) float s[4];
-
-            _mm_store_ps(s, sum);
-            tsum = s[0] + s[1] + s[2] + s[3];
-
-            for (int k = n & ~3; k < n; k++)
-            {
-                float l = _left[i][k];
-                float r = _right[j][k];
-                tsum += (l*r);
-            }
-            product[i][j] = tsum;
-        }
-    }
+  
+    mulRowsChunk(0, m, _left, _right, product);
     return std::move(product);
 }

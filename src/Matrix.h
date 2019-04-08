@@ -4,6 +4,8 @@
 
 typedef float MatrixValue;
 
+float dotProduct(const float* _l, const float* _r, u32 _size);
+
 class Matrix
 {
 public:
@@ -48,6 +50,8 @@ public:
 private:
     void copy(const Matrix& _other);
     void move(Matrix&& _other);
+    void clear();
+    void alloc(u32 _count, u32 _alignment);
 
     MatrixValue* m_values = nullptr;
     u16 m_rows = 0;
