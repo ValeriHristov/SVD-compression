@@ -23,7 +23,7 @@ public:
     inline MatrixValue* operator[](u16 _row) { return m_values + m_cols * _row; };
     inline const MatrixValue* operator[](u16 _row) const { return m_values + m_cols * _row; };
 
-    bool operator==(const Matrix& _other)
+    inline bool operator==(const Matrix& _other)
     {
         if (m_rows != _other.m_rows || m_cols != _other.m_cols)
             return false;
@@ -32,7 +32,7 @@ public:
         {
             for (int j = 0; j < m_cols; j++)
             {
-                if ((*this)[i][j] != _other[i][j])
+                if (abs((*this)[i][j] - _other[i][j]) > 0.0001)
                     return false;
             }
         }
