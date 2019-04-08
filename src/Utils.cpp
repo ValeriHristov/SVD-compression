@@ -69,6 +69,34 @@ std::vector<Matrix> imageToMatrices(const ImageData & _image)
     return std::move(matrices);
 }
 
+std::vector<Matrix> QRAlgorithm(const Matrix & _matrix, u32 _iterations)
+{
+    std::vector<Matrix> qs;
+    qs.reserve(_iterations);
+
+    Matrix A = _matrix;
+    for (int i = 0; i < _iterations; i++)
+    {
+        auto qr = QRGramSchmidt(A);
+        A = qr[1] * qr[0];
+        qs.emplace_back(std::move(qr[0]));
+    }
+
+    Matrix Q = std::move(qs[0]);
+    u32 count = qs.size();
+
+    for (int i = 1; i < count; i++)
+    {
+        Q = Q * qs[i];
+    }
+
+    std::vector<Matrix> res;
+    res.push_back(std::move(A)); // eigenvalues
+    res.push_back(std::move(Q)); // eigenvectors by rows
+
+    return std::move(res);
+}
+
 std::vector<Matrix> QRGramSchmidt(const Matrix & _matrix)
 {
     Matrix m = _matrix.transpose();
@@ -98,11 +126,9 @@ std::vector<Matrix> QRGramSchmidt(const Matrix & _matrix)
         normalizeVector(q[i], vectorLen);
     }
 
-    Matrix r = q * _matrix;
-
     std::vector<Matrix> qr;
     qr.push_back(q.transpose());
-    qr.push_back(r);
+    qr.push_back(q * _matrix);
 
-    return qr;
+    return std::move(qr);
 }

@@ -17,7 +17,11 @@ void multiplyVector(const float* _vector, float* _destination, u32 _size, float 
 
 void copyVector(const float* _source, float* _dest, u32 _size);
 
+void normalizeVector(float* _vector, u32 _size);
+
 std::vector<Matrix> imageToMatrices(const ImageData& _image);
+
+std::vector<Matrix> QRAlgorithm(const Matrix& _matrix,u32 _iterations);
 
 std::vector<Matrix> QRDecompose(const Matrix& _matrix);
 
