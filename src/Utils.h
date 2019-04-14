@@ -26,3 +26,5 @@ std::vector<Matrix> QRAlgorithm(const Matrix& _matrix,u32 _iterations);
 std::vector<Matrix> QRDecompose(const Matrix& _matrix);
 
 std::vector<Matrix> QRGramSchmidt(const Matrix& _matrix);
+
+std::vector<Matrix> SVD(const Matrix& _matrix);

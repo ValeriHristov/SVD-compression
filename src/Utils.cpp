@@ -1,5 +1,12 @@
 #include "Utils.h"
 #include "IImageReader.h"
+#include "ScopedTimer.h"
+
+template<class T>
+T min(T a, T b)
+{
+    return a < b ? a : b;
+}
 
 void project(const float * _u, const float * _a, float * _destination, u32 _size)
 {
@@ -57,7 +64,7 @@ std::vector<Matrix> imageToMatrices(const ImageData & _image)
         for (u32 j = 0u; j < _image.m_width; j++)
         {
             for (u32 m = 0u; m < matrixCount; m++)
-            {             
+            {
                 matrices[m][i][j] = static_cast<MatrixValue>(data[index++]);
             }
         }
@@ -131,4 +138,77 @@ std::vector<Matrix> QRGramSchmidt(const Matrix & _matrix)
     qr.push_back(q * _matrix);
 
     return std::move(qr);
+}
+
+std::vector<Matrix> SVD(const Matrix & _matrix)
+{
+    Matrix A;
+    bool transposed = false;
+    if (_matrix.getRows() < _matrix.getCols())
+    {
+        A = _matrix.transpose();
+        transposed = true;
+    }
+    else
+    {
+        A = _matrix;
+    }
+
+
+    std::vector<Matrix> qr;
+    qr = QRAlgorithm(A.transpose() * A, 15);
+    Matrix s = std::move(qr[0]);
+    Matrix u = std::move(qr[1]);
+
+    for (u16 i = 0; i < s.getRows(); i++)
+    {
+        for (int j = 0; j < s.getCols(); j++)
+        {
+            if (i == j)
+                s[i][i] = sqrt(s[i][i]);
+            else
+                s[i][j] = 0;
+        }
+    }
+
+    Matrix S = s;
+    //  u16 eigenValueCount = min(s.getCols(), s.getRows());
+    //
+    //  Matrix S(A.getRows(), A.getCols());
+    //
+    //  for (u16 i = 0; i < S.getRows(); i++)
+    //  {
+    //      for (int j = 0; j < S.getCols(); j++)
+    //      {
+    //          if (i == j && i < eigenValueCount)
+    //              S[i][i] = sqrt(s[i][i]);
+    //          else
+    //              S[i][j] = 0;
+    //      }
+    //  }
+
+      // From : http://www.netlib.org/utk/people/JackDongarra/etemplates/node40.html
+      // At * ui = si * vi 
+    Matrix v = (A*u).transpose();
+    {
+        for (u32 i = 0; i < v.getRows(); i++)
+        {
+            multiplyVector(v[i], v[i], v.getCols(), 1 / S[i][i]);
+        }
+    }
+    std::vector<Matrix> svd;
+
+    if (!transposed)
+    {
+        svd.push_back(v.transpose());
+        svd.push_back(S);
+        svd.push_back(u);
+    }
+    else
+    {
+        svd.push_back(u.transpose());
+        svd.push_back(S);
+        svd.push_back(v);
+    }
+    return std::move(svd);
 }
