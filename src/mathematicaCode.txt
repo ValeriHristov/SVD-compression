@@ -1,0 +1,43 @@
+path = "";
+x = ReadList[StringJoin[path, "matrix0.txt"], Number, 
+   RecordLists -> True];
+y = ReadList[StringJoin[path, "matrix1.txt"], Number, 
+   RecordLists -> True];
+
+z = ReadList[StringJoin[path, "matrix2.txt"], Number, 
+   RecordLists -> True];
+   
+   f[x_, y_, z_, i_, j_] := {z[[i]][[j]], y[[i]][[j]], x[[i]][[j]]}
+
+merge[x_, y_, z_] := 
+ (
+  img = {};
+  lenx =  Length[x];
+  lenx1 = Length[x[[1]]];
+  
+  For[i = 1, i < lenx, i++ , row = {}; 
+   For[j = 1, j < lenx1, j++;  
+    AppendTo[row, f[x, y, z, i, j]]
+    ];
+   AppendTo[img, row]
+   ]; 
+  img
+  )
+  
+  compose[m_] := merge[m[[1]], m[[2]], m[[3]]]
+mul[m_] := m[[1]].m[[2]].Transpose[m[[3]]]
+
+compress[x_, y_, z_, count_] := (
+  m1 = SingularValueDecomposition[x, UpTo[count]];
+  m2 = SingularValueDecomposition[y, UpTo[count]];
+  m3 = SingularValueDecomposition[z, UpTo[count]];
+  mat1 = mul[m1];
+  mat2 = mul[m2];
+  mat3 = mul[m3];
+  merge[mat1, mat2, mat3]
+  )
+  
+  Image[compress[x, y, z, 30]]
+  
+  Image[compress[x, y, z, 150]]
+   

@@ -1,9 +1,9 @@
 #include <utility>
-
-#include "Matrix.h"
 #include <thread>
 #include <vector>
+#include <immintrin.h>
 
+#include "Matrix.h"
 u32 alignTo(u32 _num, u32 _alignment)
 {
     if (_num % _alignment == 0) return _num;
@@ -74,7 +74,7 @@ Matrix Matrix::transpose() const
     return std::move(result);
 }
 
-void Matrix::print(std::ostream & _os)
+void Matrix::print(std::ostream & _os) const
 {
     for (u32 i = 0; i < m_rows; i++)
     {
@@ -120,7 +120,7 @@ void Matrix::move(Matrix && _other)
     _other.m_values = nullptr;
 }
 
-float dotProduct(const float * _left,const float * _right, u32 _size)
+float dotProduct(const float * _left, const float * _right, u32 _size)
 {
     __m128 sum;
     float tsum = 0;
@@ -128,13 +128,15 @@ float dotProduct(const float * _left,const float * _right, u32 _size)
     tsum = 0.f;
     sum = _mm_setzero_ps();
 
-    for (u16 k = 0; k < _size - 3; k += 4)
+    if (_size >= 4)
     {
-        __m128 l = _mm_loadu_ps(_left + k);
-        __m128 r = _mm_loadu_ps(_right + k);
-        sum = _mm_add_ps(_mm_mul_ps(l, r), sum);
+        for (u16 k = 0; k < _size - 3; k += 4)
+        {
+            __m128 l = _mm_loadu_ps(_left + k);
+            __m128 r = _mm_loadu_ps(_right + k);
+            sum = _mm_add_ps(_mm_mul_ps(l, r), sum);
+        }
     }
-
     alignas(16) float s[4];
 
     _mm_store_ps(s, sum);
@@ -253,7 +255,7 @@ Matrix mulThreaded(const Matrix & _left, const Matrix & _right, u32 _numThreads)
     }
     u16 m = alignTo(_left.getRows(), _numThreads);
     u16 rowsPerThread = m / _numThreads;
-    u16 lastThreadRows = rowsPerThread - (m - _left.getRows());
+    i16 lastThreadRows = rowsPerThread - (m - _left.getRows());
     Matrix product(_left.getRows(), _right.getRows());
 
     std::vector<std::thread>threads(_numThreads);
@@ -278,7 +280,7 @@ Matrix mulTransposedSIMD(const Matrix & _left, const Matrix & _right)
     u16 m = _left.getRows();
     u16 p = _right.getRows();
     Matrix product(m, p);
-  
+
     mulRowsChunk(0, m, _left, _right, product);
     return std::move(product);
 }

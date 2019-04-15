@@ -2,6 +2,8 @@
 #include "IImageReader.h"
 #include "ScopedTimer.h"
 
+#pragma warning(disable::4996)
+
 template<class T>
 T min(T a, T b)
 {
@@ -142,18 +144,17 @@ std::vector<Matrix> QRGramSchmidt(const Matrix & _matrix)
 
 std::vector<Matrix> SVD(const Matrix & _matrix)
 {
-    Matrix A;
-    bool transposed = false;
     if (_matrix.getRows() < _matrix.getCols())
     {
-        A = _matrix.transpose();
-        transposed = true;
-    }
-    else
-    {
-        A = _matrix;
+        auto svd = SVD(_matrix.transpose());
+        std::vector<Matrix> result;
+        result.push_back(svd[2].transpose());
+        result.push_back(std::move(svd[1]));
+        result.push_back(svd[0].transpose());
+        return result;
     }
 
+    const Matrix& A = _matrix;
 
     std::vector<Matrix> qr;
     qr = QRAlgorithm(A.transpose() * A, 15);
@@ -198,17 +199,9 @@ std::vector<Matrix> SVD(const Matrix & _matrix)
     }
     std::vector<Matrix> svd;
 
-    if (!transposed)
-    {
-        svd.push_back(v.transpose());
-        svd.push_back(S);
-        svd.push_back(u);
-    }
-    else
-    {
-        svd.push_back(u.transpose());
-        svd.push_back(S);
-        svd.push_back(v);
-    }
+    svd.push_back(v.transpose());
+    svd.push_back(S);
+    svd.push_back(u);
+
     return std::move(svd);
 }

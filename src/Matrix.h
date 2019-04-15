@@ -41,7 +41,7 @@ public:
 
     Matrix transpose() const;
 
-    void print(std::ostream& _os = std::cout);
+    void print(std::ostream& _os = std::cout) const;
 
     // export format for WolframMathematica
     // import by using ReadList[ PATH/file, Number, RecordLists -> True]
