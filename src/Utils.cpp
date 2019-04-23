@@ -2,7 +2,7 @@
 #include "IImageReader.h"
 #include "ScopedTimer.h"
 
-#pragma warning(disable::4996)
+
 
 template<class T>
 T min(T a, T b)
@@ -147,11 +147,8 @@ std::vector<Matrix> SVD(const Matrix & _matrix)
     if (_matrix.getRows() < _matrix.getCols())
     {
         auto svd = SVD(_matrix.transpose());
-        std::vector<Matrix> result;
-        result.push_back(svd[2].transpose());
-        result.push_back(std::move(svd[1]));
-        result.push_back(svd[0].transpose());
-        return result;
+        std::swap(svd[0], svd[2]);
+        return svd;
     }
 
     const Matrix& A = _matrix;
@@ -172,21 +169,7 @@ std::vector<Matrix> SVD(const Matrix & _matrix)
         }
     }
 
-    Matrix S = s;
-    //  u16 eigenValueCount = min(s.getCols(), s.getRows());
-    //
-    //  Matrix S(A.getRows(), A.getCols());
-    //
-    //  for (u16 i = 0; i < S.getRows(); i++)
-    //  {
-    //      for (int j = 0; j < S.getCols(); j++)
-    //      {
-    //          if (i == j && i < eigenValueCount)
-    //              S[i][i] = sqrt(s[i][i]);
-    //          else
-    //              S[i][j] = 0;
-    //      }
-    //  }
+  //  Matrix S = s;
 
       // From : http://www.netlib.org/utk/people/JackDongarra/etemplates/node40.html
       // At * ui = si * vi 
@@ -194,14 +177,14 @@ std::vector<Matrix> SVD(const Matrix & _matrix)
     {
         for (u32 i = 0; i < v.getRows(); i++)
         {
-            multiplyVector(v[i], v[i], v.getCols(), 1 / S[i][i]);
+            multiplyVector(v[i], v[i], v.getCols(), 1 / s[i][i]);
         }
     }
     std::vector<Matrix> svd;
 
     svd.push_back(v.transpose());
-    svd.push_back(S);
-    svd.push_back(u);
+    svd.push_back(std::move(s));
+    svd.push_back(std::move(u));
 
     return std::move(svd);
 }
