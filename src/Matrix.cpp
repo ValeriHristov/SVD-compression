@@ -60,6 +60,36 @@ Matrix::~Matrix()
     clear();
 }
 
+bool Matrix::operator==(const Matrix & _other)
+{
+    if (m_rows != _other.m_rows || m_cols != _other.m_cols)
+        return false;
+
+    for (int i = 0; i < m_rows; i++)
+    {
+        for (int j = 0; j < m_cols; j++)
+        {
+            if (abs((*this)[i][j] - _other[i][j]) > 0.0001)
+                return false;
+        }
+    }
+    return true;
+}
+
+Matrix Matrix::operator-(const Matrix & _other)
+{
+    Matrix res(m_rows, m_cols);
+
+    for (int i = 0; i < m_rows; i++)
+    {
+        for (int j = 0; j < m_cols; j++)
+        {
+            res[i][j] = (*this)[i][j] - _other[i][j];
+        }
+    }
+    return res;
+}
+
 Matrix Matrix::transpose() const
 {
     Matrix result(m_cols, m_rows);
@@ -72,6 +102,19 @@ Matrix Matrix::transpose() const
         }
     }
     return std::move(result);
+}
+
+MatrixValue Matrix::norm() const
+{
+    MatrixValue norm = 0.0;
+    for (int i = 0; i < m_rows; i++)
+    {
+        for (int j = 0; j < m_cols; j++)
+        {
+            norm += abs((*this)[i][j]);
+        }
+    }
+    return norm;
 }
 
 void Matrix::print(std::ostream & _os) const
@@ -100,6 +143,19 @@ void Matrix::exportForWolframMathematica(std::ostream & _os)
     }
 }
 
+Matrix Matrix::identity(int rows, int cols)
+{
+    Matrix m(rows, cols);
+    for (int i = 0; i < rows; i++)
+    {
+        for (int j = 0; j < cols; j++)
+        {
+            m[i][j] = i == j ? 1.0 : 0.0;
+        }
+    }
+    return std::move(m);
+}
+
 void Matrix::copy(const Matrix & _other)
 {
     m_rows = _other.m_rows;
@@ -120,7 +176,7 @@ void Matrix::move(Matrix && _other)
     _other.m_values = nullptr;
 }
 
-float dotProduct(const float * _left, const float * _right, u32 _size)
+MatrixValue dotProduct(const MatrixValue * _left, const MatrixValue * _right, u32 _size)
 {
     __m128 sum;
     float tsum = 0;
@@ -171,7 +227,7 @@ Matrix mulSlow(const Matrix & _left, const Matrix & _right)
 
     Matrix product(m, p);
 
-    float sum;
+    MatrixValue sum;
     for (u16 i = 0; i < m; i++)
     {
         for (u16 j = 0; j < p; j++)
@@ -179,8 +235,8 @@ Matrix mulSlow(const Matrix & _left, const Matrix & _right)
             sum = 0;
             for (u16 k = 0; k < n; k++)
             {
-                float l = _left[i][k];
-                float r = _right[k][j];
+                MatrixValue l = _left[i][k];
+                MatrixValue r = _right[k][j];
                 sum += (l * r);
             }
             product[i][j] = sum;
@@ -215,7 +271,7 @@ Matrix mulTransposed(const Matrix & _left, const Matrix & _right)
     }
 
     Matrix product(m, p);
-    float sum;
+    MatrixValue sum;
     for (u16 i = 0; i < m; i++)
     {
         for (u16 j = 0; j < p; j++)
@@ -223,8 +279,8 @@ Matrix mulTransposed(const Matrix & _left, const Matrix & _right)
             sum = 0;
             for (u16 k = 0; k < n; k++)
             {
-                float l = _left[i][k];
-                float r = _right[j][k];
+                MatrixValue l = _left[i][k];
+                MatrixValue r = _right[j][k];
                 sum += (l * r);
             }
             product[i][j] = sum;

@@ -4,7 +4,7 @@
 
 typedef float MatrixValue;
 
-float dotProduct(const float* _l, const float* _r, u32 _size);
+MatrixValue dotProduct(const MatrixValue* _l, const MatrixValue* _r, u32 _size);
 
 class Matrix
 {
@@ -23,29 +23,21 @@ public:
     inline MatrixValue* operator[](u16 _row) { return m_values + m_cols * _row; };
     inline const MatrixValue* operator[](u16 _row) const { return m_values + m_cols * _row; };
 
-    inline bool operator==(const Matrix& _other)
-    {
-        if (m_rows != _other.m_rows || m_cols != _other.m_cols)
-            return false;
+    bool operator==(const Matrix& _other);
 
-        for (int i = 0; i < m_rows; i++)
-        {
-            for (int j = 0; j < m_cols; j++)
-            {
-                if (abs((*this)[i][j] - _other[i][j]) > 0.0001)
-                    return false;
-            }
-        }
-        return true;
-    }
+    Matrix operator-(const Matrix& _other);
 
     Matrix transpose() const;
+
+    double norm() const;
 
     void print(std::ostream& _os = std::cout) const;
 
     // export format for WolframMathematica
     // import by using ReadList[ PATH/file, Number, RecordLists -> True]
     void exportForWolframMathematica(std::ostream& _os = std::cout);
+
+    static Matrix identity(int rows, int cols);
 
 private:
     void copy(const Matrix& _other);
