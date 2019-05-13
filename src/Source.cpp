@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 #include <fstream>
-
+#include <random>
 #include "Utils.h"
 #include "Matrix.h"
 #include "BMPReader.h"
@@ -19,20 +19,25 @@ void runPerformanceTest(std::string _description, Func _f)
 
 int main()
 {
-    BMPReader reader;
-    ImageData image = reader.ReadFile("../SVD-compression/data/6-4-balloon.bmp");
-    std::vector<Matrix> matrices = imageToMatrices(image);
+    int rows = 1000;
+    int cols = 1000;
+    std::random_device rd;  //Will be used to obtain a seed for the random number engine
+    std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<> dis(0.0, 1.0);
 
-    for (u32 i = 0; i < 3; i++)
+    Matrix a(rows, cols);
+    int counter = 1;
+    for (int i = 0; i < rows; i++)
     {
-        std::string file = "matrix";
-        file = file + std::to_string(i) + ".txt";
-       
-        std::ofstream os;
-        os.open(file,std::ofstream::trunc);
-       
-        matrices[i].exportForWolframMathematica(os);
+        for (int j = 0; j < cols; j++)
+        {
+            a[i][j] = dis(gen);
+        }
     }
+
+    auto svd = SVD(a);
+
+    Matrix res = svd[0] * svd[1] * svd[2].transpose();
 
     return 0;
 }
