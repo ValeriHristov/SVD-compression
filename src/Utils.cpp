@@ -2,21 +2,41 @@
 #include "IImageReader.h"
 #include "ScopedTimer.h"
 
+std::pair<MatrixValue, MatrixValue> getGivensCoeffs(MatrixValue a, MatrixValue b)
+{
+    MatrixValue c, s;
+    std::swap(a, b);
+    MatrixValue r = sqrt(a*a + b *b);
 
+    c = a / r;
+    s = -b / r;
+
+    return std::make_pair(c, s);
+}
+
+void applyGivensRotation(Matrix& _m, MatrixValue _c, MatrixValue _s, int _i, int)
+{
+    for (int col = 0; col < _m.getCols(); col++)
+    {
+        MatrixValue val1 = _m[_i - 1][col];
+        MatrixValue val2 = _m[_i][col];
+        _m[_i][col] = val1 * _c + val2 * _s;
+        _m[_i - 1][col] = val1* -_s + val2 *_c;
+    }
+}
 
 template<class T>
 T min(T a, T b)
 {
     return a < b ? a : b;
 }
-
-void project(const float * _u, const float * _a, float * _destination, u32 _size)
+void project(const MatrixValue * _u, const MatrixValue * _a, MatrixValue * _destination, u32 _size)
 {
-    float multiplier = dotProduct(_u, _a, _size) / dotProduct(_u, _u, _size);
+    MatrixValue multiplier = dotProduct(_u, _a, _size) / dotProduct(_u, _u, _size);
     multiplyVector(_u, _destination, _size, multiplier);
 }
 
-void multiplyVector(const float * _vector, float * _destination, u32 _size, float _scalar)
+void multiplyVector(const MatrixValue * _vector, MatrixValue * _destination, u32 _size, MatrixValue _scalar)
 {
     for (u32 i = 0; i < _size; i++)
     {
@@ -24,7 +44,7 @@ void multiplyVector(const float * _vector, float * _destination, u32 _size, floa
     }
 }
 
-void copyVector(const float * _source, float * _dest, u32 _size)
+void copyVector(const MatrixValue * _source, MatrixValue * _dest, u32 _size)
 {
     for (u32 i = 0; i < _size; i++)
     {
@@ -32,7 +52,7 @@ void copyVector(const float * _source, float * _dest, u32 _size)
     }
 }
 
-void subtractVectors(const float* _left, const float* _right, float* _dest, u32 _size)
+void subtractVectors(const MatrixValue* _left, const MatrixValue* _right, MatrixValue* _dest, u32 _size)
 {
     for (int i = 0; i < _size; i++)
     {
@@ -40,9 +60,9 @@ void subtractVectors(const float* _left, const float* _right, float* _dest, u32 
     }
 }
 
-void normalizeVector(float* _vector, u32 _size)
+void normalizeVector(MatrixValue* _vector, u32 _size)
 {
-    float len = sqrt(dotProduct(_vector, _vector, _size));
+    MatrixValue len = sqrt(dotProduct(_vector, _vector, _size));
     multiplyVector(_vector, _vector, _size, 1 / len);
 }
 
@@ -86,6 +106,7 @@ std::vector<Matrix> QRAlgorithm(const Matrix & _matrix, u32 _iterations)
     Matrix A = _matrix;
     for (int i = 0; i < _iterations; i++)
     {
+       // auto qr = QRGivensRotations(A);
         auto qr = QRGramSchmidt(A);
         A = qr[1] * qr[0];
         qs.emplace_back(std::move(qr[0]));
@@ -114,7 +135,7 @@ std::vector<Matrix> QRGramSchmidt(const Matrix & _matrix)
     u32 vectorLen = m.getCols();
     Matrix q(vectorsCount, vectorLen);
 
-    float* temp = new float[vectorLen];
+    MatrixValue* temp = new MatrixValue[vectorLen];
 
     copyVector(m[0], q[0], vectorLen);
 
@@ -135,11 +156,38 @@ std::vector<Matrix> QRGramSchmidt(const Matrix & _matrix)
         normalizeVector(q[i], vectorLen);
     }
 
+
     std::vector<Matrix> qr;
     qr.push_back(q.transpose());
     qr.push_back(q * _matrix);
 
     return std::move(qr);
+}
+
+std::vector<Matrix> QRGivensRotations(const Matrix & _matrix)
+{
+    Matrix m = _matrix;
+    Matrix q = Matrix::identity(m.getRows(), m.getCols());
+    for (int i = 0; i < m.getCols(); i++)
+    {
+        for (int j = m.getRows() - 1; j >= i + 1; j--)
+        {
+            if (abs(m[j][i]) < 0.00001)
+            {
+                m[j][i] = 0;
+                continue;
+            }
+            auto cs = getGivensCoeffs(m[j - 1][i], m[j][i]);
+            applyGivensRotation(m, cs.first, cs.second, j, i);
+            applyGivensRotation(q, cs.first, cs.second, j, i);
+            if (abs(m[j][i]) < 0.00001)
+            {
+                m[j][i] = 0;
+            };
+        }
+    }
+
+    return std::vector<Matrix>{ q.transpose(), std::move(m) };
 }
 
 std::vector<Matrix> SVD(const Matrix & _matrix)
@@ -150,10 +198,11 @@ std::vector<Matrix> SVD(const Matrix & _matrix)
         std::swap(svd[0], svd[2]);
         return svd;
     }
-
+    ScopedTimer t("svd with givens");
     const Matrix& A = _matrix;
 
     std::vector<Matrix> qr;
+    //qr = QRAlgorithm(A * A.transpose(), 15);
     qr = QRAlgorithm(A.transpose() * A, 15);
     Matrix s = std::move(qr[0]);
     Matrix u = std::move(qr[1]);
@@ -169,10 +218,10 @@ std::vector<Matrix> SVD(const Matrix & _matrix)
         }
     }
 
-  //  Matrix S = s;
+    //  Matrix S = s;
 
-      // From : http://www.netlib.org/utk/people/JackDongarra/etemplates/node40.html
-      // At * ui = si * vi 
+        // From : http://www.netlib.org/utk/people/JackDongarra/etemplates/node40.html
+        // At * ui = si * vi 
     Matrix v = (A*u).transpose();
     {
         for (u32 i = 0; i < v.getRows(); i++)
