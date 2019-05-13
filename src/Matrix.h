@@ -29,7 +29,7 @@ public:
 
     Matrix transpose() const;
 
-    double norm() const;
+    MatrixValue norm() const;
 
     void print(std::ostream& _os = std::cout) const;
 
