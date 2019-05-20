@@ -3,6 +3,8 @@
 #include "BMPReader.h"
 #include "Utils.h"
 
+#pragma warning(disable:4996)
+
 ImageData BMPReader::ReadFile(const char * _fileName) const
 {
     FILE* f = fopen(_fileName, "rb");
