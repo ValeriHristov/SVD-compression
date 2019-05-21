@@ -11,14 +11,14 @@ std::pair<MatrixValue, MatrixValue> getGivensCoeffs(MatrixValue a, MatrixValue b
     return std::make_pair(c, s);
 }
 
-void applyGivensRotation(Matrix& _m, MatrixValue _c, MatrixValue _s, int _i, int)
+void applyGivensRotation(Matrix& _m, MatrixValue _c, MatrixValue _s, int _targetRow, int _startCol)
 {
-    for (int col = 0; col < _m.getCols(); col++)
+    for (int col = _startCol ; col < _m.getCols(); col++)
     {
-        MatrixValue val1 = _m[_i - 1][col];
-        MatrixValue val2 = _m[_i][col];
-        _m[_i][col] = val1 * _c + val2 * _s;
-        _m[_i - 1][col] = val1* -_s + val2 *_c;
+        MatrixValue val1 = _m[_targetRow - 1][col];
+        MatrixValue val2 = _m[_targetRow][col];
+        _m[_targetRow][col] = val1 * _c + val2 * _s;
+        _m[_targetRow - 1][col] = val1* -_s + val2 *_c;
     }
 }
 
@@ -173,7 +173,7 @@ std::vector<Matrix> QRGivensRotations(const Matrix & _matrix)
             }
             auto cs = getGivensCoeffs(m[j][i], m[j - 1][i]);
             applyGivensRotation(m, cs.first, cs.second, j, i);
-            applyGivensRotation(q, cs.first, cs.second, j, i);
+            applyGivensRotation(q, cs.first, cs.second, j, 0);
             if (abs(m[j][i]) < epsilon6)
             {
                 m[j][i] = 0.f;
@@ -195,7 +195,7 @@ std::vector<Matrix> SVD(const Matrix & _matrix)
     const Matrix& A = _matrix;
 
     std::vector<Matrix> qr;
-    qr = QRAlgorithm(A.transpose() * A, 2);
+    qr = QRAlgorithm(A.transpose() * A, 1);
     Matrix s = std::move(qr[0]);
     Matrix u = std::move(qr[1]);
 
