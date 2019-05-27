@@ -19,25 +19,28 @@ void runPerformanceTest(std::string _description, Func _f)
 
 int main()
 {
-    int rows = 1000;
-    int cols = 1000;
-    std::random_device rd;  //Will be used to obtain a seed for the random number engine
-    std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
-    std::uniform_real_distribution<> dis(0.0, 1.0);
+    BMPReader reader;
+    auto image = reader.ReadFile("../SVD-compression/data/6-4-balloon.BMP");
+    auto matrices = imageToMatrices(image);
 
-    Matrix a(rows, cols);
-    int counter = 1;
-    for (int i = 0; i < rows; i++)
+    std::vector<Matrix> svd0 = SVD(matrices[0]);
+    std::vector<Matrix> svd1 = SVD(matrices[1]);
+    std::vector<Matrix> svd2 = SVD(matrices[2]);
+
+    while (1)
     {
-        for (int j = 0; j < cols; j++)
-        {
-            a[i][j] = dis(gen);
-        }
+        u32 valueToRemove = 0;
+        std::cin >> valueToRemove;
+        auto compressed = std::vector<Matrix>{ compress(svd0,valueToRemove),
+                                               compress(svd1,valueToRemove),
+                                               compress(svd2,valueToRemove) 
+                                             };
+
+        std::cout << "Error: " << (matrices[0] - compressed[0]).norm() << '\n';
+        std::cout << "Error: " << (matrices[1] - compressed[1]).norm() << '\n';
+        std::cout << "Error: " << (matrices[2] - compressed[2]).norm() << '\n';
+        auto img = matricesToImage(compressed, None);
+
+        draw(img);
     }
-
-    auto svd = SVD(a);
-
-    Matrix res = svd[0] * svd[1] * svd[2].transpose();
-
-    return 0;
 }
