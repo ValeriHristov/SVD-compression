@@ -29,6 +29,7 @@ u8 pixelConvert(T _pixel, PixelConvertion _method)
     if (_method == Div255)
         return (u8)_pixel / 255.0f;
     _ASSERT(0);
+    return 0;
 }
 
 inline u32 alignTo4(u32 _num)

@@ -24,11 +24,6 @@ void applyGivensRotation(Matrix& _m, MatrixValue _c, MatrixValue _s, int _target
     }
 }
 
-template<class T>
-T min(T a, T b)
-{
-    return a < b ? a : b;
-}
 void project(const MatrixValue * _u, const MatrixValue * _a, MatrixValue * _destination, u32 _size)
 {
     MatrixValue multiplier = dotProduct(_u, _a, _size) / dotProduct(_u, _u, _size);
