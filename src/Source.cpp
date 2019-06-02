@@ -17,10 +17,17 @@ void runPerformanceTest(std::string _description, Func _f)
     _f();
 }
 
+template< class T>
+T max(T a, T b)
+{
+    if (a > b) return a;
+    return b;
+}
+
 int main()
 {
     BMPReader reader;
-    auto image = reader.ReadFile("../SVD-compression/data/6-4-balloon.BMP");
+    auto image = reader.ReadFile("../SVD-compression/data/marbles.BMP");
     auto matrices = imageToMatrices(image);
 
     std::vector<Matrix> svd0 = SVD(matrices[0]);
@@ -29,16 +36,20 @@ int main()
 
     while (1)
     {
-        u32 valueToRemove = 0;
-        std::cin >> valueToRemove;
-        auto compressed = std::vector<Matrix>{ compress(svd0,valueToRemove),
-                                               compress(svd1,valueToRemove),
-                                               compress(svd2,valueToRemove) 
+        u32 valuesToRemove = 0;
+        std::cin >> valuesToRemove;
+        auto compressed = std::vector<Matrix>{ compress(svd0,valuesToRemove),
+                                               compress(svd1,valuesToRemove),
+                                               compress(svd2,valuesToRemove)
                                              };
 
         std::cout << "Error: " << (matrices[0] - compressed[0]).norm() << '\n';
         std::cout << "Error: " << (matrices[1] - compressed[1]).norm() << '\n';
         std::cout << "Error: " << (matrices[2] - compressed[2]).norm() << '\n';
+
+        int compressedSize = max(0u,(svd0[0].getCols() - valuesToRemove)*svd0[0].getRows()) + max(0u,(svd0[2].getCols() - valuesToRemove)*svd0[2].getRows());
+        int originalSize = matrices[0].getCols() * matrices[0].getRows();
+        std::cout << "                                                 Memory used:" << (compressedSize*1.0 / originalSize) * 100 << "%\n";
         auto img = matricesToImage(compressed, None);
 
         draw(img);
